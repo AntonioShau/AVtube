@@ -1,0 +1,243 @@
+from kivymd.app import MDApp
+from kivy.lang import Builder
+from kivy.properties import ObjectProperty, StringProperty
+import pytube
+from kivy import metrics 
+import time
+from threading import Thread
+from kivymd.uix.dialog import MDDialog
+from kivymd.uix.button import MDFlatButton
+
+kv = """
+Screen:
+    in_class: 
+      
+    SmartTile:
+        source: "https://api.binary-coffee.dev/uploads/ca301e6aad8b47a799627372827d3ba5.jpg"
+        pos_hint: {"center_x": .5, "center_y": .73}
+        size_hint: None, None
+        size: "150dp", "150dp"
+        id: img
+        
+        
+    MDLabel:
+        text: 'AV'
+        font_style: 'H1'
+        theme_text_color: "Custom"
+        text_color: 0, 0, 0, 1
+        pos_hint: {'center_x': 0.78, 'center_y': 0.9}
+    
+    MDLabel:
+        text: 'TUBE'
+        font_style: 'H3'
+        theme_text_color: "Custom"
+        text_color: 0, 0, 150, 1
+        pos_hint: {'center_x': 1.1, 'center_y': 0.88}
+        
+    MDIcon:
+        icon: 'youtube'
+        theme_text_color: 'Custom'
+        text_color: 1, 0, 0, 1
+        font_size: '110dp'
+        pos_hint: {"center_x": 0.5, "center_y": 0.9}
+        
+    MDTextFieldRound:
+        id: txtdir
+        text: " "
+        icon_right: "youtube-studio" 
+        icon_color_focus: 1, 0, 0, 1
+        hint_text: 'Direccion del video'
+        pos_hint: {'center_x': 0.43, 'center_y': 0.40}
+        size_hint_x: 0.72
+        size_hint_y: 0.065
+        required: True  
+        color_mode: 'Custom'
+        line_color_focus: 1, 0, 1, 1
+        normal_color: 100, 100, 100, 1
+            
+    MDFillRoundFlatIconButton:
+        id: btn
+        icon: 'file-music'
+        icon_color: 1, 1, 1, 1
+        text: 'Audio'
+        pos_hint: {'center_x': 0.51, 'center_y': 0.3}
+        theme_text_color: "Custom"
+        text_color: 0, 0, 0, 1
+        line_color: 0, 0, 0, 1
+        md_bg_color: 0, 0, 0, 1
+        on_release:
+            app.auth_hilo()
+        
+    MDFillRoundFlatIconButton:
+        id: btn2
+        icon: 'file-video'
+        icon_color: 1, 1, 1, 1
+        text: 'Video'
+        pos_hint: {'center_x': 0.51, 'center_y': 0.2}
+        theme_text_color: "Custom"
+        text_color: 0, 0, 0, 1
+        line_color: 0, 0, 0, 1
+        md_bg_color: 0, 0, 0, 1
+        on_release:
+            app.auth2_hilo()
+          
+    MDLabel:
+        text: " "
+        id: lblsize2
+        halign: "center"
+        theme_text_color: 'Custom'
+        text_color: 0, 0, 0, 1
+        pos_hint: {'center_x': 0.28, 'center_y': 0.3}
+    MDLabel:
+        text: " "
+        id: lblsize
+        haling: "center"
+        theme_text_color: 'Custom'
+        text_color: 0, 0, 0, 1
+        pos_hint: {'center_x': 0.7, 'center_y': 0.2}
+    
+    MDLabel:
+        text: " "
+        id: lbllog
+        haling: "center"
+        theme_text_color: 'Custom'
+        text_color: 0, 0, 1, 1
+        pos_hint: {'center_x': 0.95, 'center_y': 0.14}
+        
+    MDLabel:
+        text: "" 
+        id: lbltitle
+        halign: 'center'
+        theme_text_color: "Custom" 
+        text_color: 0, 0, 0, 1
+        pos_hint: {'center_x': 0.5, 'center_y': 0.60}
+          
+    MDProgressBar:
+        min:0
+        max:100
+        id: pbar
+        running_duration: 0.5
+        catching_duration: 0.1
+        pos_hint: {'center_x': .82, 'center_y': .2}
+        size_hint: (0.3, None)
+       
+    MDIconButton:
+        icon: "send-circle"
+        user_font_size: '55dp'
+        theme_text_color: "Custom"
+        text_color: 0, 0, 0, 1
+        pos_hint: {"center_x": .93, "center_y": 0.40}
+        on_press:
+            app.start_load()
+            
+    MDIconButton:
+        icon: "information-outline"
+        user_font_size: '25dp'
+        theme_text_color: "Custom"
+        text_color: 0, 0, 0, 1
+        pos_hint: {"center_x": .95, "center_y": 0.97}
+        elevation_normal: 12
+        on_release: 
+            app.show_alert_dialog()
+            
+    MDSpinner:
+        size_hint: None, None
+        size: dp(45), dp(45)
+        pos_hint: {'center_x': .5, 'center_y': .52}
+        active: False 
+        color: 0, 0, 0,  1
+        id: spin
+            
+
+  """
+class Main(MDApp):
+    in_class = ObjectProperty(None)
+    dialog = None
+    
+        
+    def build(self):
+        return Builder.load_string(kv)
+        
+    def show_alert_dialog(self):
+        if not self.dialog:
+            self.dialog = MDDialog(title='AVTube downloader', 
+                text="Copie la dirección del vídeo de su aplicación de YouTube y peguela en el campo de texto, presione el botón para cargar el contenido del enlace. Descargue el archivo de su elección, el audio se descarga en formato mp4 al igual que el videos, este último se descarga con la mayor resolución posible. Disfrute! ")
+        self.dialog.open()
+        
+    def start_load(self):
+        loadd = Thread(target=self.load)
+        loadd.start()
+       
+    def progress_func(self, stream, chunk, bytes_remaining):
+        values = round((1 - bytes_remaining / stream.filesize) * 100, 3)
+        self.root.ids.pbar.value = values
+        self.root.ids.lbllog.text = values
+    
+    def load(self): 
+      try:
+            vari=self.root.ids.txtdir.text
+            if vari != " " :
+                self.root.ids.spin.active = True  
+            dir = "/YtDw"             
+            link = self.root.ids.txtdir.text             
+            yt = pytube.YouTube(link)
+            yttitle = yt.title
+            ytthumb = yt.thumbnail_url
+            self.root.ids.img.source = (ytthumb)
+            self.root.ids.lbltitle.text = (yttitle) 
+            stream = yt.streams.filter(only_audio=True).first() 
+            size = (stream.filesize / 1e+6)
+            sizes = round(size, 2)
+            self.root.ids.lblsize2.text = str(sizes) + "Mb"
+            stream2 = yt.streams.get_highest_resolution()
+            size2 = (stream2.filesize / 1e+6)
+            sizes2 = round(size2, 2)
+            self.root.ids.lblsize.text = str(sizes2)+ "Mb"
+            self.root.ids.spin.active = False
+            
+      except:
+          pass
+      
+    #Funcionalidsd del boton MUSICA
+    def auth_hilo(self):
+        loadd = Thread(target=self.auth)
+        loadd.start()
+
+    def auth(self):
+        def complete_func(stream, dir):
+            self.root.ids.lbllog.text = "Listo! "
+            time.sleep(3)
+            self.root.ids.lbllog.text = ""
+        try:
+            global dir
+            dir = "/sdcard/YtDw/Musica"
+            link = self.root.ids.txtdir.text
+            yt = pytube.YouTube(link, on_complete_callback=complete_func, on_progress_callback=self.progress_func)
+            global stream
+            stream = yt.streams.filter(only_audio=True).first()
+            stream.download(dir)
+        except:
+            pass
+
+    #funcionalidad del boton VIDEO
+    def auth2_hilo(self):
+        loadd = Thread(target=self.auth2)
+        loadd.start()       
+        
+    def auth2(self):
+        def complete_func(stream, dir):
+            self.root.ids.lbllog.text = "Listo! "
+            time.sleep(3)
+            self.root.ids.lbllog.text = ""
+        try:
+            global dir
+            dir = "/sdcard/YtDw/videos"
+            link = self.root.ids.txtdir.text
+            yt = pytube.YouTube(link, on_complete_callback=complete_func, on_progress_callback=self.progress_func)
+            global stream
+            stream = yt.streams.get_highest_resolution()
+            stream.download(dir)
+        except:
+            pass
+            
+Main().run()
